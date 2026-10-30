@@ -13,7 +13,7 @@ DATABASE_URL = "sqlite:///./pme_marketplace.db"
 SECRET_KEY = "cle_secrete_pme_ci_national_admin"
 ALGORITHM = "HS256"
 
-# Tes coordonnées d'administrateur unique
+# Coordonnées de l'administrateur unique
 ADMIN_EMAIL = "acquah2017@gmail.com"
 ADMIN_PASSWORD = "Cancer1993."
 
@@ -53,7 +53,7 @@ def init_admin():
     admin_user = db.query(UserDB).filter(UserDB.email == ADMIN_EMAIL).first()
     if not admin_user:
         new_admin = UserDB(
-            nom="Administrateur Principal",
+            nom="Kouassi Acquah Georges De Boris",
             email=ADMIN_EMAIL,
             hashed_password=hash_password(ADMIN_PASSWORD),
             role="admin"
@@ -61,6 +61,7 @@ def init_admin():
         db.add(new_admin)
         db.commit()
     else:
+        admin_user.nom = "Kouassi Acquah Georges De Boris"
         admin_user.hashed_password = hash_password(ADMIN_PASSWORD)
         admin_user.role = "admin"
         db.commit()
@@ -104,7 +105,40 @@ def inscription_web(
     return templates.TemplateResponse(
         request=request,
         name="index.html",
-        context={"succes": f"Félicitations {nom} ! Votre compte a été créé avec succès."}
+        context={"succes": f"Félicitations {nom} ! Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter."}
+    )
+
+# Route de Connexion pour les Commerçants et Prestataires
+@app.get("/login", response_class=HTMLResponse)
+def login_get(request: Request):
+    return templates.TemplateResponse(request=request, name="login.html", context={})
+
+@app.post("/login", response_class=HTMLResponse)
+def login_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if email.strip().lower() == ADMIN_EMAIL.lower():
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"erreur": "Veuillez utiliser l'accès administrateur dédié."}
+        )
+    
+    user = db.query(UserDB).filter(UserDB.email == email.strip().lower()).first()
+    if not user or not verify_password(password, user.hashed_password):
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"erreur": "Email ou mot de passe incorrect."}
+        )
+    
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"succes": f"Bienvenue de retour, {user.nom} ({user.role}) ! Connexion réussie."}
     )
 
 @app.get("/admin-login", response_class=HTMLResponse)
@@ -124,7 +158,6 @@ def admin_login_post(
             context={"erreur": "Accès refusé : Identifiants administrateur incorrects."}
         )
     
-    # Redirection propre en GET pour éviter le message de ré-envoi de formulaire
     return RedirectResponse(url="/admin-dashboard?authorized=true", status_code=303)
 
 @app.get("/admin-dashboard", response_class=HTMLResponse)

@@ -6,7 +6,7 @@
     <title>PME Marketplace Côte d'Ivoire - Accueil & Inscription</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col justify-between">
 
     <!-- En-tête -->
     <header class="bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md">
@@ -18,8 +18,10 @@
                     <p class="text-xs text-orange-200">Bassam & National - Commerçants & Artisans</p>
                 </div>
             </div>
-            <!-- Lien admin discret tout en haut si besoin, ou totalement retiré de la vue publique -->
-            <a href="/admin-login" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-white/20">Admin 🔐</a>
+            <!-- Bouton dédié aux membres déjà inscrits -->
+            <a href="/login" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-semibold transition border border-white/20">
+                Déjà inscrit ? Se connecter
+            </a>
         </div>
     </header>
 
@@ -49,7 +51,7 @@
 
         <!-- Formulaire d'inscription unique -->
         <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-6">
-            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Créer un compte</h3>
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Créer un compte professionnel</h3>
 
             <form action="/inscription-web" method="POST" class="space-y-4">
                 
@@ -96,9 +98,11 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-xs text-gray-500">
+    <!-- Footer avec accès Admin totalement discret -->
+    <footer class="bg-white border-t border-gray-200 py-4 text-center text-xs text-gray-400">
         &copy; 2026 PME Marketplace Côte d'Ivoire. Tous droits réservés.
+        <!-- Lien admin invisible/discret connu de toi seul -->
+        <a href="/admin-login" class="text-gray-300 hover:text-gray-500 ml-2" title="Admin">.</a>
     </footer>
 
     <!-- Script JavaScript pour afficher ou masquer le champ métier selon le choix -->
