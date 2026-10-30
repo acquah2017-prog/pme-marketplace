@@ -77,7 +77,6 @@ def register_user(
     db.commit()
     db.refresh(new_user)
 
-    # Redirection propre vers le dashboard avec l'email en paramètre
     return RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/login", response_class=HTMLResponse)
