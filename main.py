@@ -68,9 +68,10 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# Routes Web avec la syntaxe TemplateResponse moderne
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html", {})
 
 @app.post("/inscription-web", response_class=HTMLResponse)
 def inscription_web(
@@ -83,8 +84,7 @@ def inscription_web(
 ):
     db_user = db.query(UserDB).filter(UserDB.email == email).first()
     if db_user:
-        return templates.TemplateResponse("index.html", {
-            "request": request, 
+        return templates.TemplateResponse(request, "index.html", {
             "erreur": "Cet email est déjà utilisé."
         })
     
@@ -94,8 +94,7 @@ def inscription_web(
     db.commit()
     db.refresh(new_user)
     
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
+    return templates.TemplateResponse(request, "index.html", {
         "succes": f"Félicitations {nom} ! Votre compte a été créé avec succès."
     })
 
@@ -117,7 +116,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = db.query(UserDB).filter(UserDB.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_status=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect"
         )
     access_token = jwt.encode({"sub": user.email, "role": user.role}, SECRET_KEY, algorithm=ALGORITHM)
