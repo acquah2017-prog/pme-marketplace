@@ -3,7 +3,7 @@ from typing import Optional
 import hashlib
 
 from fastapi import FastAPI, HTTPException, Depends, status, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -15,14 +15,16 @@ DATABASE_URL = "sqlite:///./pme_marketplace.db"
 SECRET_KEY = "cle_secrete_pme_ci_national_admin"
 ALGORITHM = "HS256"
 
+# === TES COORDONNÉES D'ADMINISTRATEUR UNIQUE ===
+ADMIN_EMAIL = "acquah2017@gmail.com"
+ADMIN_PASSWORD = "Cancer1993."
+
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 app = FastAPI(title="PME Marketplace Côte d'Ivoire - National Pro")
 templates = Jinja2Templates(directory="templates")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
@@ -37,11 +39,6 @@ def get_db():
     finally:
         db.close()
 
-class RoleEnum(str, Enum):
-    commercant = "commercant"
-    prestataire = "prestataire"
-    admin = "admin"
-
 class UserDB(Base):
     __tablename__ = "utilisateurs"
 
@@ -53,9 +50,31 @@ class UserDB(Base):
 
 Base.metadata.create_all(bind=engine)
 
+# Initialisation automatique du compte Admin unique
+def init_admin():
+    db = SessionLocal()
+    admin_user = db.query(UserDB).filter(UserDB.email == ADMIN_EMAIL).first()
+    if not admin_user:
+        new_admin = UserDB(
+            nom="Administrateur Principal",
+            email=ADMIN_EMAIL,
+            hashed_password=hash_password(ADMIN_PASSWORD),
+            role="admin"
+        )
+        db.add(new_admin)
+        db.commit()
+    else:
+        # S'assurer que le mot de passe et le rôle sont bien à jour
+        admin_user.hashed_password = hash_password(ADMIN_PASSWORD)
+        admin_user.role = "admin"
+        db.commit()
+    db.close()
+
+init_admin()
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse(request, "index.html", {})
+    return templates.TemplateResponse(request=request, name="index.html", context={})
 
 @app.post("/inscription-web", response_class=HTMLResponse)
 def inscription_web(
@@ -66,30 +85,36 @@ def inscription_web(
     role: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    if email.lower() == ADMIN_EMAIL.lower():
+        return templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={"erreur": "Cet email est réservé à l'administration."}
+        )
+
     db_user = db.query(UserDB).filter(UserDB.email == email).first()
     if db_user:
-        return templates.TemplateResponse(request, "index.html", {
-            "request": request,
-            "erreur": "Cet email est déjà utilisé."
-        })
+        return templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={"erreur": "Cet email est déjà utilisé."}
+        )
     
     hashed_pwd = hash_password(password)
     new_user = UserDB(nom=nom, email=email, hashed_password=hashed_pwd, role=role)
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
     
-    return templates.TemplateResponse(request, "index.html", {
-        "request": request,
-        "succes": f"Félicitations {nom} ! Votre compte a été créé avec succès."
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"succes": f"Félicitations {nom} ! Votre compte a été créé avec succès."}
+    )
 
-# Route d'affichage de la page de connexion Admin
 @app.get("/admin-login", response_class=HTMLResponse)
 def admin_login_get(request: Request):
-    return templates.TemplateResponse(request, "admin_login.html", {})
+    return templates.TemplateResponse(request=request, name="admin_login.html", context={})
 
-# Traitement de la connexion Admin
 @app.post("/admin-login", response_class=HTMLResponse)
 def admin_login_post(
     request: Request,
@@ -97,22 +122,18 @@ def admin_login_post(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    user = db.query(UserDB).filter(UserDB.email == email).first()
-    if not user or not verify_password(password, user.hashed_password) or user.role != "admin":
-        return templates.TemplateResponse(request, "admin_login.html", {
-            "erreur": "Identifiants incorrects ou accès non autorisé (Admin uniquement)."
-        })
+    # Vérification stricte des identifiants admin
+    if email.strip().lower() != ADMIN_EMAIL.lower() or password != ADMIN_PASSWORD:
+        return templates.TemplateResponse(
+            request=request,
+            name="admin_login.html",
+            context={"erreur": "Accès refusé : Identifiants administrateur incorrects."}
+        )
     
-    # Si c'est un admin valide, on affiche le tableau de bord avec les utilisateurs
     utilisateurs = db.query(UserDB).all()
-    return templates.TemplateResponse(request, "admin.html", {
-        "utilisateurs": utilisateurs
-    })
-
-@app.get("/admin-dashboard", response_class=HTMLResponse)
-def admin_dashboard(request: Request, db: Session = Depends(get_db)):
-    utilisateurs = db.query(UserDB).all()
-    return templates.TemplateResponse(request, "admin.html", {
-        "utilisateurs": utilisateurs
-    })
+    return templates.TemplateResponse(
+        request=request,
+        name="admin.html",
+        context={"utilisateurs": utilisateurs}
+    )
 
