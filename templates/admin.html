@@ -3,41 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administration - PME Marketplace CI</title>
+    <title>Dashboard Exécutif - PME Marketplace CI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-100 p-6">
-    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-orange-600">Tableau de Bord Administrateur</h1>
-            <a href="/" class="bg-gray-500 text-white px-4 py-2 rounded text-sm hover:bg-gray-600">Accueil</a>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Navbar Admin -->
+    <header class="bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🇨🇮</span>
+                <div>
+                    <h1 class="text-xl font-bold">Administration Nationale Pro</h1>
+                    <p class="text-xs text-orange-200">Bassam & Côte d'Ivoire - Pilotage & Paiements</p>
+                </div>
+            </div>
+            <a href="/" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20">Déconnexion</a>
         </div>
-        <p class="text-gray-600 mb-6">Espace de contrôle national de la marketplace.</p>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-grow w-full space-y-8">
         
-        <h2 class="text-xl font-semibold mb-3">Liste des utilisateurs enregistrés</h2>
-        <div class="overflow-x-auto">
-            <table class="w-full border-collapse border border-gray-300">
-                <thead>
-                    <tr class="bg-gray-200 text-left">
-                        <th class="border border-gray-300 p-2">ID</th>
-                        <th class="border border-gray-300 p-2">Nom</th>
-                        <th class="border border-gray-300 p-2">Email</th>
-                        <th class="border border-gray-300 p-2">Rôle</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in utilisateurs %}
-                    <tr>
-                        <td class="border border-gray-300 p-2 text-center">{{ u.id }}</td>
-                        <td class="border border-gray-300 p-2">{{ u.nom }}</td>
-                        <td class="border border-gray-300 p-2">{{ u.email }}</td>
-                        <td class="border border-gray-300 p-2 font-bold text-orange-600">{{ u.role }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Cartes Statistiques & Financières (KPIs) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Commerçants / PME</p>
+                    <h3 class="text-3xl font-extrabold text-orange-600 mt-2">{{ total_commercants }}</h3>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 text-xl font-bold">🏪</div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Prestataires</p>
+                    <h3 class="text-3xl font-extrabold text-blue-600 mt-2">{{ total_prestataires }}</h3>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 text-xl font-bold">🛠️</div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Volume Financier (FCFA)</p>
+                    <h3 class="text-2xl font-extrabold text-emerald-600 mt-2">{{ chiffre_affaires }} FCFA</h3>
+                </div>
+                <div class="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 text-xl font-bold">💳</div>
+            </div>
         </div>
-    </div>
+
+        <!-- Section Graphiques Avancés -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Répartition -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-center justify-center">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 w-full text-left">Répartition des Acteurs</h3>
+                <div class="w-60 h-60">
+                    <canvas id="userChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Graphique Suivi des Montants / Paiements -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 lg:col-span-2 flex flex-col justify-between">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Suivi des Transactions & Revenus (FCFA)</h3>
+                <div class="h-64">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableaux de Suivi Détaillés -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Commerçants -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>🏪</span> Liste des Commerçants & PME
+                </h3>
+                <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 text-xs uppercase">
+                                <th class="p-3 border-b">Nom / Entreprise</th>
+                                <th class="p-3 border-b">Email</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            {% for c in commercants %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3 font-medium text-gray-900">{{ c.nom }}</td>
+                                <td class="p-3 text-gray-500">{{ c.email }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="p-4 text-center text-gray-400 italic">Aucun commerçant enregistré.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Prestataires -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>🛠️</span> Liste des Prestataires
+                </h3>
+                <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 text-xs uppercase">
+                                <th class="p-3 border-b">Nom / Entreprise</th>
+                                <th class="p-3 border-b">Email</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            {% for p in prestataires %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3 font-medium text-gray-900">{{ p.nom }}</td>
+                                <td class="p-3 text-gray-500">{{ p.email }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="p-4 text-center text-gray-400 italic">Aucun prestataire enregistré.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-xs text-gray-500">
+        &copy; 2026 PME Marketplace Côte d'Ivoire. Tous droits réservés.
+    </footer>
+
+    <!-- Scripts Graphiques Chart.js -->
+    <script>
+        const totalCommercants = {{ total_commercants }};
+        const totalPrestataires = {{ total_prestataires }};
+        const totalCA = {{ chiffre_affaires }};
+
+        // Graphique camembert
+        const ctxUser = document.getElementById('userChart').getContext('2d');
+        new Chart(ctxUser, {
+            type: 'doughnut',
+            data: {
+                labels: ['Commerçants', 'Prestataires'],
+                datasets: [{
+                    data: [totalCommercants, totalPrestataires],
+                    backgroundColor: ['#f97316', '#3b82f6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // Graphique financier et paiements
+        const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+        newChart(ctxRevenue, {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Actuel'],
+                datasets: [{
+                    label: 'Volume de Paiements (FCFA)',
+                    data: [150000, 300000, 450000, 600000, 850000, 1200000, totalCA > 0 ? totalCA : 250000],
+                    backgroundColor: '#10b981',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
 

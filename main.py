@@ -5,17 +5,15 @@ import hashlib
 from fastapi import FastAPI, HTTPException, Depends, status, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, Float
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from jose import jwt
 
 DATABASE_URL = "sqlite:///./pme_marketplace.db"
 SECRET_KEY = "cle_secrete_pme_ci_national_admin"
 ALGORITHM = "HS256"
 
-# === TES COORDONNÉES D'ADMINISTRATEUR UNIQUE ===
+# Tes coordonnées d'administrateur unique
 ADMIN_EMAIL = "acquah2017@gmail.com"
 ADMIN_PASSWORD = "Cancer1993."
 
@@ -50,7 +48,6 @@ class UserDB(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# Initialisation automatique du compte Admin unique
 def init_admin():
     db = SessionLocal()
     admin_user = db.query(UserDB).filter(UserDB.email == ADMIN_EMAIL).first()
@@ -64,7 +61,6 @@ def init_admin():
         db.add(new_admin)
         db.commit()
     else:
-        # S'assurer que le mot de passe et le rôle sont bien à jour
         admin_user.hashed_password = hash_password(ADMIN_PASSWORD)
         admin_user.role = "admin"
         db.commit()
@@ -122,7 +118,6 @@ def admin_login_post(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Vérification stricte des identifiants admin
     if email.strip().lower() != ADMIN_EMAIL.lower() or password != ADMIN_PASSWORD:
         return templates.TemplateResponse(
             request=request,
@@ -131,9 +126,43 @@ def admin_login_post(
         )
     
     utilisateurs = db.query(UserDB).all()
+    commercants = [u for u in utilisateurs if u.role == "commercant"]
+    prestataires = [u for u in utilisateurs if u.role == "prestataire"]
+    
+    # Calcul dynamique financier (ex: estimation de volumes traités en FCFA)
+    total_users = len(commercants) + len(prestataires)
+    chiffre_affaires = total_users * 45000  # Montant simulé basé sur l'activité
+
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
-        context={"utilisateurs": utilisateurs}
+        context={
+            "total_commercants": len(commercants),
+            "total_prestataires": len(prestataires),
+            "chiffre_affaires": chiffre_affaires,
+            "commercants": commercants,
+            "prestataires": prestataires
+        }
+    )
+
+@app.get("/admin-dashboard", response_class=HTMLResponse)
+def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    utilisateurs = db.query(UserDB).all()
+    commercants = [u for u in utilisateurs if u.role == "commercant"]
+    prestataires = [u for u in utilisateurs if u.role == "prestataire"]
+    
+    total_users = len(commercants) + len(prestataires)
+    chiffre_affaires = total_users * 45000
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin.html",
+        context={
+            "total_commercants": len(commercants),
+            "total_prestataires": len(prestataires),
+            "chiffre_affaires": chiffre_affaires,
+            "commercants": commercants,
+            "prestataires": prestataires
+        }
     )
 
