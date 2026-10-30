@@ -23,10 +23,10 @@
     </header>
 
     <!-- Contenu Principal -->
-    <main class="max-w-3xl mx-auto px-4 py-10 flex-grow w-full">
+    <main class="max-w-3xl mx-auto px-4 py-10 flex-grow w-full space-y-8">
         
         <!-- Message de bienvenue -->
-        <div class="text-center space-y-3 mb-8">
+        <div class="text-center space-y-3">
             <h2 class="text-3xl font-extrabold text-gray-900">Rejoignez la plus grande place de marché</h2>
             <p class="text-gray-600 max-w-xl mx-auto text-sm">
                 Commerçants, PME et Artisans de tous corps de métier en Côte d'Ivoire : inscrivez-vous en toute autonomie pour développer votre activité.
@@ -35,24 +35,24 @@
 
         <!-- Messages d'alerte (Succès ou Erreur) -->
         {% if succes %}
-        <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center text-sm font-semibold shadow-sm">
+        <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center text-sm font-semibold shadow-sm">
             {{ succes }}
         </div>
         {% endif %}
 
         {% if erreur %}
-        <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-center text-sm font-semibold shadow-sm">
+        <div class="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-center text-sm font-semibold shadow-sm">
             {{ erreur }}
         </div>
         {% endif %}
 
-        <!-- Formulaire d'inscription universel -->
+        <!-- Formulaire d'inscription (SANS le rôle admin) -->
         <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-6">
             <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Créer votre compte professionnel</h3>
 
             <form action="/inscription-web" method="POST" class="space-y-4">
                 
-                <!-- Choix du rôle -->
+                <!-- Choix du rôle (Limité uniquement à Commerçant et Prestataire) -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Vous êtes :</label>
                     <select name="role" id="role-select" onchange="changerRole()" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 bg-white text-sm">
@@ -93,6 +93,15 @@
             </form>
         </div>
 
+        <!-- Espace Connexion / Espace Admin discret -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 text-center space-y-3">
+            <h4 class="text-sm font-bold text-gray-700">Vous êtes l'administrateur de la plateforme ?</h4>
+            <p class="text-xs text-gray-500">Accédez à votre tableau de bord financier et de pilotage sécurisé.</p>
+            <a href="/admin-login" class="inline-block bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2.5 rounded-xl text-xs transition shadow-sm">
+                Se connecter à l'Espace Admin 🔐
+            </a>
+        </div>
+
     </main>
 
     <!-- Footer -->
@@ -101,6 +110,7 @@
     </footer>
 
     <!-- Script pour afficher/masquer le champ métier selon le rôle -->
+    <Sélection>
     <script>
         function changerRole() {
             const roleSelect = document.getElementById('role-select');
