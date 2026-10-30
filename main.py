@@ -3,10 +3,10 @@ from typing import Optional
 import hashlib
 
 from fastapi import FastAPI, HTTPException, Depends, status, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 DATABASE_URL = "sqlite:///./pme_marketplace.db"
@@ -116,7 +116,6 @@ def admin_login_post(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db)
 ):
     if email.strip().lower() != ADMIN_EMAIL.lower() or password != ADMIN_PASSWORD:
         return templates.TemplateResponse(
@@ -125,28 +124,14 @@ def admin_login_post(
             context={"erreur": "Accès refusé : Identifiants administrateur incorrects."}
         )
     
-    utilisateurs = db.query(UserDB).all()
-    commercants = [u for u in utilisateurs if u.role == "commercant"]
-    prestataires = [u for u in utilisateurs if u.role == "prestataire"]
-    
-    # Calcul dynamique financier (ex: estimation de volumes traités en FCFA)
-    total_users = len(commercants) + len(prestataires)
-    chiffre_affaires = total_users * 45000  # Montant simulé basé sur l'activité
-
-    return templates.TemplateResponse(
-        request=request,
-        name="admin.html",
-        context={
-            "total_commercants": len(commercants),
-            "total_prestataires": len(prestataires),
-            "chiffre_affaires": chiffre_affaires,
-            "commercants": commercants,
-            "prestataires": prestataires
-        }
-    )
+    # Redirection propre en GET pour éviter le message de ré-envoi de formulaire
+    return RedirectResponse(url="/admin-dashboard?authorized=true", status_code=303)
 
 @app.get("/admin-dashboard", response_class=HTMLResponse)
-def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+def admin_dashboard(request: Request, authorized: Optional[str] = None, db: Session = Depends(get_db)):
+    if authorized != "true":
+        return RedirectResponse(url="/admin-login", status_code=303)
+    
     utilisateurs = db.query(UserDB).all()
     commercants = [u for u in utilisateurs if u.role == "commercant"]
     prestataires = [u for u in utilisateurs if u.role == "prestataire"]

@@ -1,4 +1,3 @@
-cat << 'EOF' > templates/admin_login.html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -8,7 +7,6 @@ cat << 'EOF' > templates/admin_login.html
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col justify-between">
-    <!-- Header -->
     <header class="bg-orange-600 text-white shadow-md">
         <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
             <h1 class="text-xl font-bold">🇨🇮 PME Marketplace (Administration)</h1>
@@ -16,7 +14,6 @@ cat << 'EOF' > templates/admin_login.html
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="max-w-md mx-auto px-4 py-12 flex-grow w-full">
         <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100">
             <div class="text-center mb-6">
@@ -44,11 +41,9 @@ cat << 'EOF' > templates/admin_login.html
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-white border-t border-gray-200 py-4 text-center text-sm text-gray-500">
         &copy; 2026 PME Marketplace Côte d'Ivoire. Tous droits réservés.
     </footer>
 </body>
 </html>
-
 
