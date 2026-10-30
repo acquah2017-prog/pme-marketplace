@@ -1,0 +1,54 @@
+cat << 'EOF' > templates/admin_login.html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion Administrateur - PME Marketplace CI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col justify-between">
+    <!-- Header -->
+    <header class="bg-orange-600 text-white shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold">🇨🇮 PME Marketplace (Administration)</h1>
+            <a href="/" class="bg-white text-orange-600 px-4 py-2 rounded-lg font-semibold text-sm shadow hover:bg-gray-100">Retour Accueil</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-md mx-auto px-4 py-12 flex-grow w-full">
+        <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-orange-600">Espace Sécurisé Admin</h2>
+                <p class="text-gray-500 text-sm mt-1">Réservé aux gestionnaires de la plateforme</p>
+            </div>
+
+            {% if erreur %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-sm">
+                {{ erreur }}
+            </div>
+            {% endif %}
+
+            <form action="/admin-login" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Adresse Email Admin</label>
+                    <input type="email" name="email" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Mot de passe</label>
+                    <input type="password" name="password" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-orange-500">
+                </div>
+                <button type="submit" class="w-full bg-orange-600 text-white py-2 rounded-lg font-semibold hover:bg-orange-700 transition">Se connecter à l'administration</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-4 text-center text-sm text-gray-500">
+        &copy; 2026 PME Marketplace Côte d'Ivoire. Tous droits réservés.
+    </footer>
+</body>
+</html>
+EOF
+

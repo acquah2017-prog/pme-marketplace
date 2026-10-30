@@ -3,7 +3,7 @@ from typing import Optional
 import hashlib
 
 from fastapi import FastAPI, HTTPException, Depends, status, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -53,21 +53,6 @@ class UserDB(Base):
 
 Base.metadata.create_all(bind=engine)
 
-class UserCreate(BaseModel):
-    nom: str
-    email: str
-    password: str
-    role: Optional[RoleEnum] = RoleEnum.commercant
-
-class UserResponse(BaseModel):
-    id: int
-    nom: str
-    email: str
-    role: str
-
-    class Config:
-        from_attributes = True
-
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse(request, "index.html", {})
@@ -84,6 +69,7 @@ def inscription_web(
     db_user = db.query(UserDB).filter(UserDB.email == email).first()
     if db_user:
         return templates.TemplateResponse(request, "index.html", {
+            "request": request,
             "erreur": "Cet email est déjà utilisé."
         })
     
@@ -94,38 +80,39 @@ def inscription_web(
     db.refresh(new_user)
     
     return templates.TemplateResponse(request, "index.html", {
+        "request": request,
         "succes": f"Félicitations {nom} ! Votre compte a été créé avec succès."
     })
 
-@app.get("/admin-dashboard", response_class=HTMLResponse)
-def admin_dashboard(request: Request, db: Session = Depends(get_db)):
-    """Espace privé réservé à l'administrateur"""
+# Route d'affichage de la page de connexion Admin
+@app.get("/admin-login", response_class=HTMLResponse)
+def admin_login_get(request: Request):
+    return templates.TemplateResponse(request, "admin_login.html", {})
+
+# Traitement de la connexion Admin
+@app.post("/admin-login", response_class=HTMLResponse)
+def admin_login_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(UserDB).filter(UserDB.email == email).first()
+    if not user or not verify_password(password, user.hashed_password) or user.role != "admin":
+        return templates.TemplateResponse(request, "admin_login.html", {
+            "erreur": "Identifiants incorrects ou accès non autorisé (Admin uniquement)."
+        })
+    
+    # Si c'est un admin valide, on affiche le tableau de bord avec les utilisateurs
     utilisateurs = db.query(UserDB).all()
     return templates.TemplateResponse(request, "admin.html", {
         "utilisateurs": utilisateurs
     })
 
-@app.post("/utilisateurs/", response_model=UserResponse)
-def inscrire_utilisateur(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(UserDB).filter(UserDB.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Cet email est déjà enregistré")
-    
-    hashed_pwd = hash_password(user.password)
-    new_user = UserDB(nom=user.nom, email=user.email, hashed_password=hashed_pwd, role=user.role.value)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-@app.post("/token")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(UserDB).filter(UserDB.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou mot de passe incorrect"
-        )
-    access_token = jwt.encode({"sub": user.email, "role": user.role}, SECRET_KEY, algorithm=ALGORITHM)
-    return {"access_token": access_token, "token_type": "bearer"}
+@app.get("/admin-dashboard", response_class=HTMLResponse)
+def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    utilisateurs = db.query(UserDB).all()
+    return templates.TemplateResponse(request, "admin.html", {
+        "utilisateurs": utilisateurs
+    })
 
