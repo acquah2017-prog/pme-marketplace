@@ -6,8 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-# Utilisation de /tmp pour garantir les droits d'écriture sur Render
-DATABASE_URL = "sqlite:///./pme_marketplace.db"
+DATABASE_URL = "sqlite:////tmp/pme_marketplace.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -15,7 +14,6 @@ Base = declarative_base()
 
 class User(Base):
     __tablename__ = "users"
-
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
@@ -38,9 +36,6 @@ def get_db():
     finally:
         db.close()
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
-
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -62,29 +57,16 @@ def register_user(
     try:
         existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
-            return templates.TemplateResponse(
-                "register.html", 
-                {"request": request, "error": "Cet email est déjà utilisé."}
-            )
+            return templates.TemplateResponse("register.html", {"request": request, "error": "Cet email est déjà utilisé."})
         
-        hashed_pwd = hash_password(password)
-        new_user = User(
-            full_name=full_name,
-            email=email,
-            password_hash=hashed_pwd,
-            role=role,
-            metier=metier
-        )
+        hashed_pwd = hashlib.sha256(password.encode()).hexdigest()
+        new_user = User(full_name=full_name, email=email, password_hash=hashed_pwd, role=role, metier=metier)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-
         return RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as e:
-        return templates.TemplateResponse(
-            "register.html", 
-            {"request": request, "error": f"Erreur technique: {str(e)}"}
-        )
+        return templates.TemplateResponse("register.html", {"request": request, "error": f"Erreur: {str(e)}"})
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
@@ -98,34 +80,17 @@ def login_user(
     db: Session = Depends(get_db)
 ):
     try:
-        hashed_pwd = hash_password(password)
+        hashed_pwd = hashlib.sha256(password.encode()).hexdigest()
         user = db.query(User).filter(User.email == email, User.password_hash == hashed_pwd).first()
-        
         if not user:
-            return templates.TemplateResponse(
-                "login.html", 
-                {"request": request, "error": "Email ou mot de passe incorrect."}
-            )
-        
+            return templates.TemplateResponse("login.html", {"request": request, "error": "Identifiants incorrects."})
         return RedirectResponse(url=f"/dashboard?email={user.email}", status_code=status.HTTP_303_SEE_OTHER)
     except Exception as e:
-        return templates.TemplateResponse(
-            "login.html", 
-            {"request": request, "error": f"Erreur technique: {str(e)}"}
-        )
-
-@app.get("/login-admin", response_class=HTMLResponse)
-def login_admin_page(request: Request):
-    return templates.TemplateResponse("login_admin.html", {"request": request})
+        return templates.TemplateResponse("login.html", {"request": request, "error": f"Erreur: {str(e)}"})
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, email: Optional[str] = None, db: Session = Depends(get_db)):
     user = None
     if email:
         user = db.query(User).filter(User.email == email).first()
-    
-    return templates.TemplateResponse(
-        "dashboard.html", 
-        {"request": request, "user": user}
-    )
-
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
