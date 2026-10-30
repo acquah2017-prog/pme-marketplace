@@ -1,0 +1,44 @@
+cat << 'EOF' > templates/admin.html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Administration - PME Marketplace CI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-orange-600">Tableau de Bord Administrateur</h1>
+            <a href="/" class="bg-gray-500 text-white px-4 py-2 rounded text-sm">Déconnexion / Accueil</a>
+        </div>
+        <p class="text-gray-600 mb-6">Espace de contrôle national de la marketplace.</p>
+        
+        <h2 class="text-xl font-semibold mb-3">Liste des utilisateurs enregistrés</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-200 text-left">
+                        <th class="border border-gray-300 p-2">ID</th>
+                        <th class="border border-gray-300 p-2">Nom</th>
+                        <th class="border border-gray-300 p-2">Email</th>
+                        <th class="border border-gray-300 p-2">Rôle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in utilisateurs %}
+                    <tr>
+                        <td class="border border-gray-300 p-2 text-center">{{ u.id }}</td>
+                        <td class="border border-gray-300 p-2">{{ u.nom }}</td>
+                        <td class="border border-gray-300 p-2">{{ u.email }}</td>
+                        <td class="border border-gray-300 p-2 font-bold text-orange-600">{{ u.role }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+EOF
+

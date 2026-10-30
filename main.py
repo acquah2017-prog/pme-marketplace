@@ -68,7 +68,6 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Routes Web avec la syntaxe TemplateResponse moderne
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse(request, "index.html", {})
@@ -98,6 +97,14 @@ def inscription_web(
         "succes": f"Félicitations {nom} ! Votre compte a été créé avec succès."
     })
 
+@app.get("/admin-dashboard", response_class=HTMLResponse)
+def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    """Espace privé réservé à l'administrateur"""
+    utilisateurs = db.query(UserDB).all()
+    return templates.TemplateResponse(request, "admin.html", {
+        "utilisateurs": utilisateurs
+    })
+
 @app.post("/utilisateurs/", response_model=UserResponse)
 def inscrire_utilisateur(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(UserDB).filter(UserDB.email == user.email).first()
@@ -116,7 +123,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = db.query(UserDB).filter(UserDB.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
-            status_status=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect"
         )
     access_token = jwt.encode({"sub": user.email, "role": user.role}, SECRET_KEY, algorithm=ALGORITHM)
