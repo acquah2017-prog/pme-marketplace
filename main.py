@@ -10,20 +10,10 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 DATABASE_URL = "sqlite:///./pme_marketplace.db"
 SECRET_KEY = "cle_secrete_pme_ci_national_admin"
-ALGORITHM = "HS256"
-
-# Coordonnées de l'administrateur unique
-ADMIN_EMAIL = "acquah2017@gmail.com"
-ADMIN_PASSWORD = "Cancer1993."
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-class UserRole(str, Enum):
-    COMMERCANT = "commercant"
-    PRESTATAIRE = "prestataire"
-    ADMIN = "admin"
 
 class User(Base):
     __tablename__ = "users"
@@ -87,9 +77,8 @@ def register_user(
     db.commit()
     db.refresh(new_user)
 
-    # Redirection HTTP 303 obligatoire vers le tableau de bord
-    response = RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
-    return response
+    # Redirection propre vers le dashboard avec l'email en paramètre
+    return RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
@@ -111,9 +100,7 @@ def login_user(
             {"request": request, "error": "Email ou mot de passe incorrect."}
         )
     
-    # Redirection HTTP 303 obligatoire vers le tableau de bord
-    response = RedirectResponse(url=f"/dashboard?email={user.email}", status_code=status.HTTP_303_SEE_OTHER)
-    return response
+    return RedirectResponse(url=f"/dashboard?email={user.email}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/login-admin", response_class=HTMLResponse)
 def login_admin_page(request: Request):
