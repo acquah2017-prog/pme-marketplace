@@ -18,7 +18,8 @@
                     <p class="text-xs text-orange-200">Bassam & National - Commerçants & Artisans</p>
                 </div>
             </div>
-            <a href="/admin-login" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20">Espace Admin</a>
+            <!-- Lien admin discret tout en haut si besoin, ou totalement retiré de la vue publique -->
+            <a href="/admin-login" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-white/20">Admin 🔐</a>
         </div>
     </header>
 
@@ -27,13 +28,13 @@
         
         <!-- Message de bienvenue -->
         <div class="text-center space-y-3">
-            <h2 class="text-3xl font-extrabold text-gray-900">Rejoignez la plus grande place de marché</h2>
+            <h2 class="text-3xl font-extrabold text-gray-900">Mise en relation des PME & Prestataires en Côte d'Ivoire</h2>
             <p class="text-gray-600 max-w-xl mx-auto text-sm">
-                Commerçants, PME et Artisans de tous corps de métier en Côte d'Ivoire : inscrivez-vous en toute autonomie pour développer votre activité.
+                Trouvez des partenaires de confiance, soumettez vos appels d'offres et développez vos affaires.
             </p>
         </div>
 
-        <!-- Messages d'alerte (Succès ou Erreur) -->
+        <!-- Messages d'alerte -->
         {% if succes %}
         <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center text-sm font-semibold shadow-sm">
             {{ succes }}
@@ -46,30 +47,21 @@
         </div>
         {% endif %}
 
-        <!-- Formulaire d'inscription (SANS le rôle admin) -->
+        <!-- Formulaire d'inscription unique -->
         <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-6">
-            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Créer votre compte professionnel</h3>
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Créer un compte</h3>
 
             <form action="/inscription-web" method="POST" class="space-y-4">
                 
-                <!-- Choix du rôle (Limité uniquement à Commerçant et Prestataire) -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Vous êtes :</label>
-                    <select name="role" id="role-select" onchange="changerRole()" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 bg-white text-sm">
-                        <option value="commercant">🏪 Commerçant / PME</option>
-                        <option value="prestataire">🛠️ Prestataire / Artisan (Tous métiers)</option>
-                    </select>
-                </div>
-
                 <!-- Nom ou Nom de l'entreprise -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet ou Nom de l'entreprise</label>
-                    <input type="text" name="nom" required placeholder="Ex: Entreprise Kouadio & Frères / Jean Dupont" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet / Nom de l'entreprise</label>
+                    <input type="text" name="nom" required placeholder="Ex: Jean Dupont / Entreprise Kouadio" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
                 </div>
 
                 <!-- Email -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresse Email professionnelle</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresse Email</label>
                     <input type="email" name="email" required placeholder="exemple@gmail.com" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
                 </div>
 
@@ -79,27 +71,27 @@
                     <input type="password" name="password" required placeholder="••••••••" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
                 </div>
 
-                <!-- Champ Métier / Spécialité (Illimité pour les artisans) -->
+                <!-- Choix du rôle / Profil -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rôle / Profil</label>
+                    <select name="role" id="role-select" onchange="changerRole()" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 bg-white text-sm">
+                        <option value="commercant">Commerçant / PME</option>
+                        <option value="prestataire">Prestataire de services</option>
+                    </select>
+                </div>
+
+                <!-- Champ Métier / Spécialité (S'affiche dynamiquement si Prestataire) -->
                 <div id="champ-metier-box" class="hidden space-y-1">
                     <label class="block text-sm font-medium text-gray-700">Votre Corps de Métier / Spécialité</label>
-                    <input type="text" name="metier_specialite" placeholder="Ex: Électricien, Plombier, Menuisier, Climatisation, Maçon, Webmaster..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
-                    <p class="text-xs text-gray-500">Tapez librement votre métier pour que vos futurs clients sachent exactement ce que vous faites.</p>
+                    <input type="text" name="metier_specialite" placeholder="Ex: Menuisier, Maçon, Plombier, Électricien..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
+                    <p class="text-xs text-gray-500">Indiquez précisément votre domaine d'activité pour vos futurs clients.</p>
                 </div>
 
                 <!-- Bouton de validation -->
                 <button type="submit" class="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold p-3 rounded-xl transition shadow-md text-sm mt-2">
-                    S'inscrire instantanément
+                    S'inscrire gratuitement
                 </button>
             </form>
-        </div>
-
-        <!-- Espace Connexion / Espace Admin discret -->
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 text-center space-y-3">
-            <h4 class="text-sm font-bold text-gray-700">Vous êtes l'administrateur de la plateforme ?</h4>
-            <p class="text-xs text-gray-500">Accédez à votre tableau de bord financier et de pilotage sécurisé.</p>
-            <a href="/admin-login" class="inline-block bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6 py-2.5 rounded-xl text-xs transition shadow-sm">
-                Se connecter à l'Espace Admin 🔐
-            </a>
         </div>
 
     </main>
@@ -109,8 +101,7 @@
         &copy; 2026 PME Marketplace Côte d'Ivoire. Tous droits réservés.
     </footer>
 
-    <!-- Script pour afficher/masquer le champ métier selon le rôle -->
-    <Sélection>
+    <!-- Script JavaScript pour afficher ou masquer le champ métier selon le choix -->
     <script>
         function changerRole() {
             const roleSelect = document.getElementById('role-select');
