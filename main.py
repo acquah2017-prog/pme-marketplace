@@ -1,7 +1,5 @@
-cat << 'EOF' > main.py
 from enum import Enum
-from typing import List, Optional
-from datetime import datetime
+from typing import Optional
 import hashlib
 
 from fastapi import FastAPI, HTTPException, Depends, status, Request, Form
@@ -11,11 +9,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from jose import JWTError, jwt
+from jose import jwt
 
-# -------------------------------------------------------------------
-# CONFIGURATION ET BASE DE DONNÉES
-# -------------------------------------------------------------------
 DATABASE_URL = "sqlite:///./pme_marketplace.db"
 SECRET_KEY = "cle_secrete_pme_ci_national_admin"
 ALGORITHM = "HS256"
@@ -42,23 +37,11 @@ def get_db():
     finally:
         db.close()
 
-# -------------------------------------------------------------------
-# ENUMS (Rôles & Statuts)
-# -------------------------------------------------------------------
 class RoleEnum(str, Enum):
     commercant = "commercant"
     prestataire = "prestataire"
     admin = "admin"
 
-class StatutDemandeEnum(str, Enum):
-    en_attente = "en_attente"
-    acceptee = "acceptee"
-    terminee = "terminee"
-    annulee = "annulee"
-
-# -------------------------------------------------------------------
-# MODÈLES SQLALCHEMY
-# -------------------------------------------------------------------
 class UserDB(Base):
     __tablename__ = "utilisateurs"
 
@@ -70,9 +53,6 @@ class UserDB(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# -------------------------------------------------------------------
-# SCHÉMAS PYDANTIC
-# -------------------------------------------------------------------
 class UserCreate(BaseModel):
     nom: str
     email: str
@@ -88,9 +68,6 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# -------------------------------------------------------------------
-# ROUTES DE L'INTERFACE WEB (HTML)
-# -------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -122,10 +99,7 @@ def inscription_web(
         "succes": f"Félicitations {nom} ! Votre compte a été créé avec succès."
     })
 
-# -------------------------------------------------------------------
-# ROUTES API (JSON)
-# -------------------------------------------------------------------
-@app.post("/utilisateurs/", response_model=UserResponse, summary="Inscrire Utilisateur")
+@app.post("/utilisateurs/", response_model=UserResponse)
 def inscrire_utilisateur(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(UserDB).filter(UserDB.email == user.email).first()
     if db_user:
@@ -138,17 +112,14 @@ def inscrire_utilisateur(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@app.post("/token", summary="Login")
+@app.post("/token")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(UserDB.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou mot de passe incorrect",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Email ou mot de passe incorrect"
         )
-    
     access_token = jwt.encode({"sub": user.email, "role": user.role}, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": access_token, "token_type": "bearer"}
-EOF
 
