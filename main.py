@@ -1,15 +1,13 @@
 import hashlib
-from enum import Enum
 from typing import Optional
-from fastapi import FastAPI, HTTPException, Depends, status, Request, Form
+from fastapi import FastAPI, Depends, status, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
+# Utilisation de /tmp pour garantir les droits d'écriture sur Render
 DATABASE_URL = "sqlite:///./pme_marketplace.db"
-SECRET_KEY = "cle_secrete_pme_ci_national_admin"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -25,7 +23,10 @@ class User(Base):
     role = Column(String)
     metier = Column(String, nullable=True)
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Erreur DB: {e}")
 
 app = FastAPI(title="PME Marketplace Côte d'Ivoire")
 templates = Jinja2Templates(directory="templates")
@@ -58,26 +59,32 @@ def register_user(
     metier: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
-    existing_user = db.query(User).filter(User.email == email).first()
-    if existing_user:
+    try:
+        existing_user = db.query(User).filter(User.email == email).first()
+        if existing_user:
+            return templates.TemplateResponse(
+                "register.html", 
+                {"request": request, "error": "Cet email est déjà utilisé."}
+            )
+        
+        hashed_pwd = hash_password(password)
+        new_user = User(
+            full_name=full_name,
+            email=email,
+            password_hash=hashed_pwd,
+            role=role,
+            metier=metier
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        return RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
+    except Exception as e:
         return templates.TemplateResponse(
             "register.html", 
-            {"request": request, "error": "Cet email est déjà utilisé."}
+            {"request": request, "error": f"Erreur technique: {str(e)}"}
         )
-    
-    hashed_pwd = hash_password(password)
-    new_user = User(
-        full_name=full_name,
-        email=email,
-        password_hash=hashed_pwd,
-        role=role,
-        metier=metier
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
@@ -90,16 +97,22 @@ def login_user(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    hashed_pwd = hash_password(password)
-    user = db.query(User).filter(User.email == email, User.password_hash == hashed_pwd).first()
-    
-    if not user:
+    try:
+        hashed_pwd = hash_password(password)
+        user = db.query(User).filter(User.email == email, User.password_hash == hashed_pwd).first()
+        
+        if not user:
+            return templates.TemplateResponse(
+                "login.html", 
+                {"request": request, "error": "Email ou mot de passe incorrect."}
+            )
+        
+        return RedirectResponse(url=f"/dashboard?email={user.email}", status_code=status.HTTP_303_SEE_OTHER)
+    except Exception as e:
         return templates.TemplateResponse(
             "login.html", 
-            {"request": request, "error": "Email ou mot de passe incorrect."}
+            {"request": request, "error": f"Erreur technique: {str(e)}"}
         )
-    
-    return RedirectResponse(url=f"/dashboard?email={user.email}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/login-admin", response_class=HTMLResponse)
 def login_admin_page(request: Request):
