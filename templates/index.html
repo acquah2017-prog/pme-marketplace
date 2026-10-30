@@ -3,89 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PME Marketplace Côte d'Ivoire</title>
+    <title>PME Marketplace Côte d'Ivoire - Accueil & Inscription</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col justify-between">
-    <!-- Header -->
-    <header class="bg-orange-600 text-white shadow-md">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-            <h1 class="text-xl font-bold">🇨🇮 PME Marketplace (Bassam & National)</h1>
-            <a href="/admin-login" class="bg-white text-orange-600 px-4 py-2 rounded-lg font-semibold text-sm shadow hover:bg-gray-100 transition">Espace Admin</a>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <!-- En-tête -->
+    <header class="bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🇨🇮</span>
+                <div>
+                    <h1 class="text-xl font-bold">PME Marketplace Côte d'Ivoire</h1>
+                    <p class="text-xs text-orange-200">Bassam & National - Commerçants & Artisans</p>
+                </div>
+            </div>
+            <a href="/admin-login" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-white/20">Espace Admin</a>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto px-4 py-8 flex-grow w-full">
-        <div class="text-center mb-8">
-            <h2 class="text-3xl font-extrabold text-gray-900 mb-2">Mise en relation des PME & Prestataires en Côte d'Ivoire</h2>
-            <p class="text-gray-600">Trouvez des partenaires de confiance, soumettez vos appels d'offres et développez vos affaires.</p>
+    <!-- Contenu Principal -->
+    <main class="max-w-3xl mx-auto px-4 py-10 flex-grow w-full">
+        
+        <!-- Message de bienvenue -->
+        <div class="text-center space-y-3 mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-900">Rejoignez la plus grande place de marché</h2>
+            <p class="text-gray-600 max-w-xl mx-auto text-sm">
+                Commerçants, PME et Artisans de tous corps de métier en Côte d'Ivoire : inscrivez-vous en toute autonomie pour développer votre activité.
+            </p>
         </div>
 
-        <!-- Messages Flash -->
+        <!-- Messages d'alerte (Succès ou Erreur) -->
         {% if succes %}
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6">
+        <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-center text-sm font-semibold shadow-sm">
             {{ succes }}
         </div>
         {% endif %}
-        
+
         {% if erreur %}
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-center text-sm font-semibold shadow-sm">
             {{ erreur }}
         </div>
         {% endif %}
 
-        <div class="grid md:grid-cols-2 gap-8">
-            <!-- Formulaire d'inscription -->
-            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                <h3 class="text-xl font-bold text-orange-600 mb-4">Créer un compte</h3>
-                <form action="/inscription-web" method="POST" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Nom complet / Nom de l'entreprise</label>
-                        <input type="text" name="nom" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Adresse Email</label>
-                        <input type="email" name="email" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Mot de passe</label>
-                        <input type="password" name="password" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Rôle / Profil</label>
-                        <select name="role" class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-orange-500">
-                            <option value="commercant">Commerçant / PME</option>
-                            <option value="prestataire">Prestataire de services</option>
-                            <option value="admin">Administrateur National</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full bg-orange-600 text-white py-2 rounded-lg font-semibold hover:bg-orange-700 transition">S'inscrire gratuitement</button>
-                </form>
-            </div>
+        <!-- Formulaire d'inscription universel -->
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-6">
+            <h3 class="text-xl font-bold text-gray-800 border-b pb-3">Créer votre compte professionnel</h3>
 
-            <!-- Espace Connexion -->
-            <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Espace Connexion</h3>
-                <form action="/token" method="POST" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" name="username" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-gray-800">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Mot de passe</label>
-                        <input type="password" name="password" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-gray-800">
-                    </div>
-                    <button type="submit" class="w-full bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition">Se connecter</button>
-                </form>
-            </div>
+            <form action="/inscription-web" method="POST" class="space-y-4">
+                
+                <!-- Choix du rôle -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Vous êtes :</label>
+                    <select name="role" id="role-select" onchange="changerRole()" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 bg-white text-sm">
+                        <option value="commercant">🏪 Commerçant / PME</option>
+                        <option value="prestataire">🛠️ Prestataire / Artisan (Tous métiers)</option>
+                    </select>
+                </div>
+
+                <!-- Nom ou Nom de l'entreprise -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom complet ou Nom de l'entreprise</label>
+                    <input type="text" name="nom" required placeholder="Ex: Entreprise Kouadio & Frères / Jean Dupont" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresse Email professionnelle</label>
+                    <input type="email" name="email" required placeholder="exemple@gmail.com" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
+                </div>
+
+                <!-- Mot de passe -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                    <input type="password" name="password" required placeholder="••••••••" class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
+                </div>
+
+                <!-- Champ Métier / Spécialité (Illimité pour les artisans) -->
+                <div id="champ-metier-box" class="hidden space-y-1">
+                    <label class="block text-sm font-medium text-gray-700">Votre Corps de Métier / Spécialité</label>
+                    <input type="text" name="metier_specialite" placeholder="Ex: Électricien, Plombier, Menuisier, Climatisation, Maçon, Webmaster..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-orange-500 text-sm">
+                    <p class="text-xs text-gray-500">Tapez librement votre métier pour que vos futurs clients sachent exactement ce que vous faites.</p>
+                </div>
+
+                <!-- Bouton de validation -->
+                <button type="submit" class="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold p-3 rounded-xl transition shadow-md text-sm mt-2">
+                    S'inscrire instantanément
+                </button>
+            </form>
         </div>
+
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-500">
+    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-xs text-gray-500">
         &copy; 2026 PME Marketplace Côte d'Ivoire. Tous droits réservés.
     </footer>
+
+    <!-- Script pour afficher/masquer le champ métier selon le rôle -->
+    <script>
+        function changerRole() {
+            const roleSelect = document.getElementById('role-select');
+            const champMetierBox = document.getElementById('champ-metier-box');
+            
+            if (roleSelect.value === 'prestataire') {
+                champMetierBox.classList.remove('hidden');
+            } else {
+                champMetierBox.classList.add('hidden');
+            }
+        }
+    </script>
 </body>
 </html>
 
