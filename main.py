@@ -1,7 +1,6 @@
+import hashlib
 from enum import Enum
 from typing import Optional
-import hashlib
-
 from fastapi import FastAPI, HTTPException, Depends, status, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -21,14 +20,25 @@ engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-app = FastAPI(title="PME Marketplace Côte d'Ivoire - National Pro")
+class UserRole(str, Enum):
+    COMMERCANT = "commercant"
+    PRESTATAIRE = "prestataire"
+    ADMIN = "admin"
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String, index=True)
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+    role = Column(String)
+    metier = Column(String, nullable=True)
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="PME Marketplace Côte d'Ivoire")
 templates = Jinja2Templates(directory="templates")
-
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return hashlib.sha256(plain_password.encode("utf-8")).hexdigest() == hashed_password
 
 def get_db():
     db = SessionLocal()
@@ -37,150 +47,86 @@ def get_db():
     finally:
         db.close()
 
-class UserDB(Base):
-    __tablename__ = "utilisateurs"
-
-    id = Column(Integer, primary_key=True, index=True)
-    nom = Column(String, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    role = Column(String, default="commercant")
-
-Base.metadata.create_all(bind=engine)
-
-def init_admin():
-    db = SessionLocal()
-    admin_user = db.query(UserDB).filter(UserDB.email == ADMIN_EMAIL).first()
-    if not admin_user:
-        new_admin = UserDB(
-            nom="Kouassi Acquah Georges De Boris",
-            email=ADMIN_EMAIL,
-            hashed_password=hash_password(ADMIN_PASSWORD),
-            role="admin"
-        )
-        db.add(new_admin)
-        db.commit()
-    else:
-        admin_user.nom = "Kouassi Acquah Georges De Boris"
-        admin_user.hashed_password = hash_password(ADMIN_PASSWORD)
-        admin_user.role = "admin"
-        db.commit()
-    db.close()
-
-init_admin()
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html", context={})
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/inscription-web", response_class=HTMLResponse)
-def inscription_web(
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@app.post("/register")
+def register_user(
     request: Request,
-    nom: str = Form(...),
+    full_name: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
     role: str = Form(...),
+    metier: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
-    if email.lower() == ADMIN_EMAIL.lower():
+    existing_user = db.query(User).filter(User.email == email).first()
+    if existing_user:
         return templates.TemplateResponse(
-            request=request,
-            name="index.html",
-            context={"erreur": "Cet email est réservé à l'administration."}
-        )
-
-    db_user = db.query(UserDB).filter(UserDB.email == email).first()
-    if db_user:
-        return templates.TemplateResponse(
-            request=request,
-            name="index.html",
-            context={"erreur": "Cet email est déjà utilisé."}
+            "register.html", 
+            {"request": request, "error": "Cet email est déjà utilisé."}
         )
     
     hashed_pwd = hash_password(password)
-    new_user = UserDB(nom=nom, email=email, hashed_password=hashed_pwd, role=role)
+    new_user = User(
+        full_name=full_name,
+        email=email,
+        password_hash=hashed_pwd,
+        role=role,
+        metier=metier
+    )
     db.add(new_user)
     db.commit()
-    
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={"succes": f"Félicitations {nom} ! Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter."}
-    )
+    db.refresh(new_user)
 
-# Route de Connexion pour les Commerçants et Prestataires
+    # Redirection HTTP 303 obligatoire vers le tableau de bord
+    response = RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
+    return response
+
 @app.get("/login", response_class=HTMLResponse)
-def login_get(request: Request):
-    return templates.TemplateResponse(request=request, name="login.html", context={})
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
-@app.post("/login", response_class=HTMLResponse)
-def login_post(
+@app.post("/login")
+def login_user(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    if email.strip().lower() == ADMIN_EMAIL.lower():
+    hashed_pwd = hash_password(password)
+    user = db.query(User).filter(User.email == email, User.password_hash == hashed_pwd).first()
+    
+    if not user:
         return templates.TemplateResponse(
-            request=request,
-            name="login.html",
-            context={"erreur": "Veuillez utiliser l'accès administrateur dédié."}
+            "login.html", 
+            {"request": request, "error": "Email ou mot de passe incorrect."}
         )
     
-    user = db.query(UserDB).filter(UserDB.email == email.strip().lower()).first()
-    if not user or not verify_password(password, user.hashed_password):
-        return templates.TemplateResponse(
-            request=request,
-            name="login.html",
-            context={"erreur": "Email ou mot de passe incorrect."}
-        )
+    # Redirection HTTP 303 obligatoire vers le tableau de bord
+    response = RedirectResponse(url=f"/dashboard?email={user.email}", status_code=status.HTTP_303_SEE_OTHER)
+    return response
+
+@app.get("/login-admin", response_class=HTMLResponse)
+def login_admin_page(request: Request):
+    return templates.TemplateResponse("login_admin.html", {"request": request})
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request, email: Optional[str] = None, db: Session = Depends(get_db)):
+    user = None
+    if email:
+        user = db.query(User).filter(User.email == email).first()
     
     return templates.TemplateResponse(
-        request=request,
-        name="login.html",
-        context={"succes": f"Bienvenue de retour, {user.nom} ({user.role}) ! Connexion réussie."}
-    )
-
-@app.get("/admin-login", response_class=HTMLResponse)
-def admin_login_get(request: Request):
-    return templates.TemplateResponse(request=request, name="admin_login.html", context={})
-
-@app.post("/admin-login", response_class=HTMLResponse)
-def admin_login_post(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...),
-):
-    if email.strip().lower() != ADMIN_EMAIL.lower() or password != ADMIN_PASSWORD:
-        return templates.TemplateResponse(
-            request=request,
-            name="admin_login.html",
-            context={"erreur": "Accès refusé : Identifiants administrateur incorrects."}
-        )
-    
-    return RedirectResponse(url="/admin-dashboard?authorized=true", status_code=303)
-
-@app.get("/admin-dashboard", response_class=HTMLResponse)
-def admin_dashboard(request: Request, authorized: Optional[str] = None, db: Session = Depends(get_db)):
-    if authorized != "true":
-        return RedirectResponse(url="/admin-login", status_code=303)
-    
-    utilisateurs = db.query(UserDB).all()
-    commercants = [u for u in utilisateurs if u.role == "commercant"]
-    prestataires = [u for u in utilisateurs if u.role == "prestataire"]
-    
-    total_users = len(commercants) + len(prestataires)
-    chiffre_affaires = total_users * 45000
-
-    return templates.TemplateResponse(
-        request=request,
-        name="admin.html",
-        context={
-            "total_commercants": len(commercants),
-            "total_prestataires": len(prestataires),
-            "chiffre_affaires": chiffre_affaires,
-            "commercants": commercants,
-            "prestataires": prestataires
-        }
+        "dashboard.html", 
+        {"request": request, "user": user}
     )
 
