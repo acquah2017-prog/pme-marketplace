@@ -1,12 +1,12 @@
-import hashlib
-from typing import Optional
-from fastapi import FastAPI, Depends, status, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Form, Depends, status
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+import hashlib
 
-DATABASE_URL = "sqlite:////tmp/pme_marketplace.db"
+DATABASE_URL = "sqlite:///./pme_marketplace.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -21,10 +21,7 @@ class User(Base):
     role = Column(String)
     metier = Column(String, nullable=True)
 
-try:
-    Base.metadata.create_all(bind=engine)
-except Exception as e:
-    print(f"Erreur DB: {e}")
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="PME Marketplace Côte d'Ivoire")
 templates = Jinja2Templates(directory="templates")
@@ -36,11 +33,11 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/", response_class=HTMLResponse)
-def home(request: Request):
+@app.get("/")
+def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/register", response_class=HTMLResponse)
+@app.get("/register")
 def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
@@ -51,24 +48,28 @@ def register_user(
     email: str = Form(...),
     password: str = Form(...),
     role: str = Form(...),
-    metier: Optional[str] = Form(None),
+    metier: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    try:
-        existing_user = db.query(User).filter(User.email == email).first()
-        if existing_user:
-            return templates.TemplateResponse("register.html", {"request": request, "error": "Cet email est déjà utilisé."})
-        
-        hashed_pwd = hashlib.sha256(password.encode()).hexdigest()
-        new_user = User(full_name=full_name, email=email, password_hash=hashed_pwd, role=role, metier=metier)
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        return RedirectResponse(url=f"/dashboard?email={new_user.email}", status_code=status.HTTP_303_SEE_OTHER)
-    except Exception as e:
-        return templates.TemplateResponse("register.html", {"request": request, "error": f"Erreur: {str(e)}"})
+    existing_user = db.query(User).filter(User.email == email).first()
+    if existing_user:
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Email déjà utilisé"})
+    
+    hashed_pwd = hashlib.sha256(password.encode()).hexdigest()
+    new_user = User(
+        full_name=full_name,
+        email=email,
+        password_hash=hashed_pwd,
+        role=role,
+        metier=metier
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
-@app.get("/login", response_class=HTMLResponse)
+@app.get("/login")
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
@@ -79,18 +80,11 @@ def login_user(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    try:
-        hashed_pwd = hashlib.sha256(password.encode()).hexdigest()
-        user = db.query(User).filter(User.email == email, User.password_hash == hashed_pwd).first()
-        if not user:
-            return templates.TemplateResponse("login.html", {"request": request, "error": "Identifiants incorrects."})
-        return RedirectResponse(url=f"/dashboard?email={user.email}", status_code=status.HTTP_303_SEE_OTHER)
-    except Exception as e:
-        return templates.TemplateResponse("login.html", {"request": request, "error": f"Erreur: {str(e)}"})
-
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request, email: Optional[str] = None, db: Session = Depends(get_db)):
-    user = None
-    if email:
-        user = db.query(User).filter(User.email == email).first()
+    hashed_pwd = hashlib.sha256(password.encode()).hexdigest()
+    user = db.query(User).filter(User.email == email, User.password_hash == hashed_pwd).first()
+    
+    if not user:
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Identifiants incorrects"})
+    
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user})
+
